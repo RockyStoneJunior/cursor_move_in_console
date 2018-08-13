@@ -3,6 +3,9 @@
 #include <termios.h>
 #include <unistd.h>
 
+#define cursorupward(x) printf("\033[%dA", (x))
+#define cursordownward(x) printf("\033[%dB", (x))
+
 #define cursorforward(x) printf("\033[%dC", (x))
 #define cursorbackward(x) printf("\033[%dD", (x))
 
@@ -100,10 +103,12 @@ int main(void)
 		c = kbget();
 		
 		if(c == KEY_ENTER ||
-		   c == KEY_ESCAPE ||
-		   c == KEY_UP ||
-		   c == KEY_DOWN){
+		   c == KEY_ESCAPE){
 			break;
+		}else if(c == KEY_UP){
+			cursorupward(1);
+		}else if(c == KEY_DOWN){
+			cursordownward(1);
 		}else if(c == KEY_RIGHT){
 			cursorbackward(1);
 		}else if(c == KEY_LEFT){
