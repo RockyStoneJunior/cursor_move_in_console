@@ -9,6 +9,8 @@
 #define cursorforward(x) printf("\033[%dC", (x))
 #define cursorbackward(x) printf("\033[%dD", (x))
 
+#define clear() printf("\033[H\033[J")
+
 #define KEY_ESCAPE 0x001b
 #define KEY_ENTER  0x000a
 #define KEY_UP	   0x0105
@@ -98,6 +100,10 @@ static int kbget(void)
 int main(void)
 {
 	int c;
+
+	clear();
+	cursordownward(10);
+	cursorforward(10);
 
 	while(1){
 		c = kbget();
