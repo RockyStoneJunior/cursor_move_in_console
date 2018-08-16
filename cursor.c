@@ -26,6 +26,8 @@ static int bottom_border = MESSAGE_BOTTOM_BORDER;
 static int left_border = MESSAGE_LEFT_BORDER;
 static int right_border = MESSAGE_RIGHT_BORDER;
 
+static int cursor_region = CURSOR_MESSAGE_REGION;
+
 static char send_buff[360];
 static int send_count = 0;
 
@@ -202,25 +204,60 @@ void backspace()
 {
 	if(cursor_current_y >= top_border)
 	{
-			cursor_current_x--;
+		cursor_current_x--;
 
-			if(cursor_current_x < left_border)
-			{
-				cursor_current_x = right_border;
-				cursor_current_y--;
-			}
+		if(cursor_current_x < left_border)
+		{
+			cursor_current_x = right_border;
+			cursor_current_y--;
+		}
 
-			set_curspos(cursor_current_x, cursor_current_y);
-			putchar(' ');
-			set_curspos(cursor_current_x, cursor_current_y);
+		set_curspos(cursor_current_x, cursor_current_y);
+		putchar(' ');
+		set_curspos(cursor_current_x, cursor_current_y);
 	}
+}
+
+void print_send_index(int index)
+{
+	send_current_x = cursor_current_x;
+	send_current_y = cursor_current_y;
+
+	cursor_current_x = message_current_x;
+	cursor_current_y = message_current_y;
+
+	cursor_region = CURSOR_MESSAGE_REGION;
+
+	set_curspos(cursor_current_x, cursor_current_y);
+
+	top_border = MESSAGE_TOP_BORDER;
+	bottom_border = MESSAGE_BOTTOM_BORDER;
+	left_border = MESSAGE_LEFT_BORDER;
+	right_border = MESSAGE_RIGHT_BORDER;
+
+	printf("%d", index);				
+
+	message_current_x = cursor_current_x;
+	message_current_y = cursor_current_y;
+
+	cursor_current_x = send_current_x;
+	cursor_current_y = send_current_y;
+
+	cursor_region = CURSOR_SEND_REGION;
+
+	set_curspos(cursor_current_x, cursor_current_y);
+
+	top_border = SEND_TOP_BORDER;
+	bottom_border = SEND_BOTTOM_BORDER;
+	left_border = SEND_LEFT_BORDER;
+	right_border = SEND_RIGHT_BORDER;
 }
 
 int main(void)
 {
 	int c;
 
-	int cursor_region = CURSOR_MESSAGE_REGION;
+	int send_index;
 
 	clear();
 	print_window();
@@ -278,7 +315,7 @@ int main(void)
 				printf(FG_CLR_CYN);
 				print_message(send_buff);
 				printf(FG_CLR_WHT);
-			
+
 				message_current_x = cursor_current_x;
 				message_current_y = cursor_current_y;
 
@@ -303,28 +340,65 @@ int main(void)
 				send_count = 0;
 			}
 		}else if(c == KEY_UP){
-			if(cursor_current_y > top_border)
-			{
-				cursorupward(1);
-				cursor_current_y--;
-			}
+				if(cursor_current_y > top_border)
+				{
+					cursorupward(1);
+					cursor_current_y--;
+					int send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
+					print_send_index(send_index);
+
+				}
 		}else if(c == KEY_DOWN){
-			if(cursor_current_y < bottom_border)
+			if(cursor_region == CURSOR_SEND_REGION)
 			{
-				cursordownward(1);
-				cursor_current_y ++;
+				int send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
+				if((send_index + 60) <= send_count)
+				{
+					cursordownward(1);
+					cursor_current_y ++;
+				}
+				
+					send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
+					print_send_index(send_index);
+
+			}else{
+				if(cursor_current_y < bottom_border)
+				{
+					cursordownward(1);
+					cursor_current_y ++;
+					int send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
+					print_send_index(send_index);
+
+				}
 			}
 		}else if(c == KEY_LEFT){
 			if(cursor_current_x > left_border)
 			{
 				cursorbackward(1);
 				cursor_current_x--;
+				int send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
+				print_send_index(send_index);
+
 			}
 		}else if(c == KEY_RIGHT){
-			if(cursor_current_x < right_border)
+			if(cursor_region == CURSOR_SEND_REGION)
 			{
-				cursorforward(1);
-				cursor_current_x++;
+				send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
+
+				if(send_index < send_count)
+				{
+					cursorforward(1);
+					cursor_current_x++;
+				}
+
+				send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
+				print_send_index(send_index);
+			}else{
+				if(cursor_current_x < right_border)
+				{
+					cursorforward(1);
+					cursor_current_x++;
+				}
 			}
 		}else if(c == KEY_CTRLA){
 			if(cursor_region == CURSOR_SEND_REGION)
@@ -423,8 +497,14 @@ int main(void)
 		}else{
 			if(cursor_region == CURSOR_SEND_REGION)
 			{
-				print_message_char(c);
-				send_buff[send_count++] = (char)c;
+				int send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
+				print_send_index(send_index);
+
+				if(send_index == send_count)
+				{
+					print_message_char(c);
+					send_buff[send_count++] = (char)c;
+				}
 			}
 		}
 	}
