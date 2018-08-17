@@ -28,7 +28,7 @@ static int right_border = MESSAGE_RIGHT_BORDER;
 
 static int cursor_region = CURSOR_MESSAGE_REGION;
 
-static char send_buff[360];
+static char send_buff[512];
 static int send_count = 0;
 
 static int getch(void);
@@ -162,7 +162,7 @@ void cursor_reposition(int col, int row)
 
 void print_message_char(int ch)
 {
-	if(cursor_current_y <= bottom_border)
+	if(cursor_current_y < bottom_border)
 	{
 		if(ch == '\n')
 		{
@@ -177,6 +177,19 @@ void print_message_char(int ch)
 			{
 				cursor_current_x = left_border;
 				cursor_current_y++;
+				set_curspos(cursor_current_x, cursor_current_y);
+			}
+		}
+	}else if(cursor_current_y == bottom_border)
+	{
+		if(ch == '\n')
+		{
+		}else{
+			if(cursor_current_x <= right_border)
+			{
+				putchar(ch);
+				cursor_current_x++;
+
 				set_curspos(cursor_current_x, cursor_current_y);
 			}
 		}
@@ -311,7 +324,7 @@ int main(void)
 				right_border = MESSAGE_RIGHT_BORDER;
 
 				printf(FG_CLR_YEL);
-				print_message("Stone: ");
+				print_message("Rocky Stone: ");
 				printf(FG_CLR_CYN);
 				print_message(send_buff);
 				printf(FG_CLR_WHT);
@@ -340,59 +353,84 @@ int main(void)
 				send_count = 0;
 			}
 		}else if(c == KEY_UP){
-				if(cursor_current_y > top_border)
-				{
-					cursorupward(1);
-					cursor_current_y--;
-					int send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
-					print_send_index(send_index);
-
-				}
+			if(cursor_current_y > top_border)
+			{
+				cursorupward(1);
+				cursor_current_y--;
+			}
 		}else if(c == KEY_DOWN){
 			if(cursor_region == CURSOR_SEND_REGION)
 			{
-				int send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
+				send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
 				if((send_index + 60) <= send_count)
 				{
 					cursordownward(1);
 					cursor_current_y ++;
 				}
-				
-					send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
-					print_send_index(send_index);
-
 			}else{
 				if(cursor_current_y < bottom_border)
 				{
 					cursordownward(1);
 					cursor_current_y ++;
-					int send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
-					print_send_index(send_index);
-
 				}
 			}
 		}else if(c == KEY_LEFT){
-			if(cursor_current_x > left_border)
+			if(cursor_region == CURSOR_SEND_REGION)
 			{
-				cursorbackward(1);
-				cursor_current_x--;
-				int send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
-				print_send_index(send_index);
+				if(cursor_current_y > top_border)
+				{
+					cursor_current_x--;
 
+					if(cursor_current_x < left_border)
+					{
+						cursor_current_y--;
+						cursor_current_x = right_border;
+						set_curspos(cursor_current_x, cursor_current_y);
+					}else{
+						cursorbackward(1);
+					}
+				}else if(cursor_current_y == top_border){
+					if(cursor_current_x > left_border)
+					{
+						cursor_current_x--;
+						cursorbackward(1);
+					}
+				}
+			}else{
+				if(cursor_current_x > left_border)
+				{
+					cursor_current_x--;
+					cursorbackward(1);
+				}
 			}
 		}else if(c == KEY_RIGHT){
 			if(cursor_region == CURSOR_SEND_REGION)
 			{
 				send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
 
-				if(send_index < send_count)
+				if(cursor_current_y < bottom_border)
 				{
-					cursorforward(1);
-					cursor_current_x++;
+					if((send_index < send_count) && (cursor_current_x <= right_border))
+					{
+						cursor_current_x++;
+
+						if(cursor_current_x > right_border)
+						{	
+							cursor_current_y++;
+							cursor_current_x = left_border;
+							set_curspos(cursor_current_x, cursor_current_y);
+						}else{
+							cursorforward(1);
+						}
+					}
+				}else if(cursor_current_y == bottom_border){
+					if((send_index < send_count) && (cursor_current_x <= right_border))
+					{
+						cursor_current_x++;
+						cursorforward(1);
+					}
 				}
 
-				send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
-				print_send_index(send_index);
 			}else{
 				if(cursor_current_x < right_border)
 				{
@@ -491,19 +529,121 @@ int main(void)
 		}else if(c == KEY_BACKSPACE){
 			if(send_count > 0)
 			{
-				backspace();
-				send_count--;
+				send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
+				if(send_index == send_count)
+				{
+					backspace();
+					send_count--;
+				}else if(send_index < send_count)
+				{	
+					int i;
+
+
+					if(cursor_current_y > top_border)
+					{
+						for(i = send_index; i < send_count; i++)
+						{
+							send_buff[i - 1] = send_buff[i];
+						}
+
+						send_buff[i - 1] = ' ';	
+						send_buff[i] = '\0';
+
+						int cursor_temp_x = cursor_current_x;
+						int cursor_temp_y = cursor_current_y;
+
+						cursor_current_x = left_border;
+						cursor_current_y = top_border;
+
+						set_curspos(cursor_current_x, cursor_current_y);
+						print_message(send_buff);
+
+						cursor_current_x = cursor_temp_x;
+						cursor_current_y = cursor_temp_y;
+
+						cursor_current_x--;
+						send_count--;
+						if(cursor_current_x < left_border)
+						{
+							cursor_current_x = right_border;
+							cursor_current_y--;
+						}
+						set_curspos(cursor_current_x, cursor_current_y);
+					}else if(cursor_current_x == top_border){
+						if(cursor_current_x > left_border)
+						{
+							for(i = send_index; i < send_count; i++)
+							{
+								send_buff[i - 1] = send_buff[i];
+							}
+
+							send_buff[i - 1] = ' ';	
+							send_buff[i] = '\0';
+
+							int cursor_temp_x = cursor_current_x;
+							int cursor_temp_y = cursor_current_y;
+
+							cursor_current_x = left_border;
+							cursor_current_y = top_border;
+
+							set_curspos(cursor_current_x, cursor_current_y);
+							print_message(send_buff);
+
+							cursor_current_x = cursor_temp_x;
+							cursor_current_y = cursor_temp_y;
+
+							cursor_current_x--;
+							send_count--;
+							set_curspos(cursor_current_x, cursor_current_y);
+						}
+					}
+
+				}
+
 			}
 		}else{
 			if(cursor_region == CURSOR_SEND_REGION)
 			{
-				int send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
-				print_send_index(send_index);
-
-				if(send_index == send_count)
+				if(send_count < 360)
 				{
-					print_message_char(c);
-					send_buff[send_count++] = (char)c;
+					int send_index = (cursor_current_y - top_border)*60 + (cursor_current_x - left_border);
+					if(send_index == send_count)
+					{
+						print_message_char(c);
+						send_buff[send_count++] = (char)c;
+					}else if(send_index < send_count)
+					{	
+						int i;
+						send_count++;
+
+						for(i = send_count; i > send_index; i--)
+						{
+							send_buff[i] = send_buff[i - 1];
+						}
+
+						send_buff[i] = c;						
+						send_buff[send_count+1] = '\0';						
+						int cursor_temp_x = cursor_current_x;
+						int cursor_temp_y = cursor_current_y;
+
+						cursor_current_x = left_border;
+						cursor_current_y = top_border;
+
+						set_curspos(cursor_current_x, cursor_current_y);
+						print_message(send_buff);
+
+						cursor_current_x = cursor_temp_x;
+						cursor_current_y = cursor_temp_y;
+
+						cursor_current_x++;										
+						if(cursor_current_x > right_border)
+						{
+							cursor_current_x = left_border;
+							cursor_current_y++;
+						}
+
+						set_curspos(cursor_current_x, cursor_current_y);
+					}
 				}
 			}
 		}
