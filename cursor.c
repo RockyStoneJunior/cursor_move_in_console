@@ -569,7 +569,7 @@ int main(void)
 							cursor_current_y--;
 						}
 						set_curspos(cursor_current_x, cursor_current_y);
-					}else if(cursor_current_x == top_border){
+					}else if(cursor_current_y == top_border){
 						if(cursor_current_x > left_border)
 						{
 							for(i = send_index; i < send_count; i++)
