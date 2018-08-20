@@ -33,6 +33,7 @@ int main()
 		while((recv_len = read(clientfd, recv_buff, MAX_RECV_LEN)) >  0)
 		{
 			write(STDOUT_FILENO, recv_buff, recv_len);
+			write(clientfd, "Receive OK!\n\n", 13);
 		}
 	}
 

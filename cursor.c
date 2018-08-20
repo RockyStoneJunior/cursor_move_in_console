@@ -3,6 +3,10 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include <pthread.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+
 #include "curspos.h"
 #include "color.h"
 #include "key.h"
@@ -268,21 +272,68 @@ void print_send_index(int index)
 	right_border = SEND_RIGHT_BORDER;
 }
 
+void *send_msg_thread(void *sockfd)
+{
+	int serverfd = *(int *)sockfd;	
+	char recv_buff[512] = "Test\n\n";
+
+	int recv_len;
+	while((recv_len = read(serverfd, recv_buff, 512)) > 0)
+	{
+				send_current_x = cursor_current_x;
+				send_current_y = cursor_current_y;
+
+				cursor_current_x = message_current_x;
+				cursor_current_y = message_current_y;
+
+				cursor_region = CURSOR_MESSAGE_REGION;
+
+				set_curspos(cursor_current_x, cursor_current_y);
+
+				top_border = MESSAGE_TOP_BORDER;
+				bottom_border = MESSAGE_BOTTOM_BORDER;
+				left_border = MESSAGE_LEFT_BORDER;
+				right_border = MESSAGE_RIGHT_BORDER;
+
+				printf(FG_CLR_RED);
+				print_message("Hai: ");
+				printf(FG_CLR_GRN);
+				print_message(recv_buff);
+				printf(FG_CLR_WHT);
+
+				send_message(serverfd, send_buff, send_count);
+
+				message_current_x = cursor_current_x;
+				message_current_y = cursor_current_y;
+
+				cursor_current_x = SEND_WINDOW_OFFSET_COL; //send_current_x;
+				cursor_current_y = SEND_WINDOW_OFFSET_ROW;//send_current_y;
+
+				cursor_region = CURSOR_SEND_REGION;
+
+				set_curspos(cursor_current_x, cursor_current_y);
+
+				top_border = SEND_TOP_BORDER;
+				bottom_border = SEND_BOTTOM_BORDER;
+				left_border = SEND_LEFT_BORDER;
+				right_border = SEND_RIGHT_BORDER;
+			
+				sleep(1);
+	}
+}
+
 int main(void)
 {
 	int c;
 
 	int send_index;
 
+	pthread_t send_msg_thread_nr;
+
+	setbuf(stdout, NULL);
+
 	clear();
 	print_window();
-
-	set_curspos(MESSAGE_WINDOW_OFFSET_COL, MESSAGE_WINDOW_OFFSET_ROW);
-
-	int serverfd = net_init();
-
-	char *test_msg = "\x1b[36m\x1b[43mStone: Hello, Rocky!\n\n\x1b[40mRocky: Hello, Stone!\n       This is my first test message! This is my first test message! This is my first test message!\n";
-	//print_message(test_msg);
 
 	message_current_x = cursor_current_x;
 	message_current_y = cursor_current_y;
@@ -298,6 +349,11 @@ int main(void)
 	bottom_border = SEND_BOTTOM_BORDER;
 	left_border = SEND_LEFT_BORDER;
 	right_border = SEND_RIGHT_BORDER;
+
+	int serverfd = net_init();
+
+	pthread_create(&send_msg_thread_nr, NULL, send_msg_thread, &serverfd);
+
 	while(1){
 		c = kbget();
 
