@@ -1,5 +1,7 @@
-cursor: cursor.c network.c server
-	gcc cursor.c network.c -o $@ -lpthread
+all: cursor server
+
+cursor: cursor.c network.c
+	gcc $^ -o $@ -lpthread
 
 server: server.c
-	gcc $^ -o $@
+	gcc $^ -o $@ -lpthread
