@@ -7,6 +7,8 @@
 #include "color.h"
 #include "key.h"
 
+#include "network.h"
+
 static struct termios term, oterm;
 
 static int cursor_current_x = MESSAGE_WINDOW_OFFSET_COL;
@@ -277,6 +279,8 @@ int main(void)
 
 	set_curspos(MESSAGE_WINDOW_OFFSET_COL, MESSAGE_WINDOW_OFFSET_ROW);
 
+	int serverfd = net_init();
+
 	char *test_msg = "\x1b[36m\x1b[43mStone: Hello, Rocky!\n\n\x1b[40mRocky: Hello, Stone!\n       This is my first test message! This is my first test message! This is my first test message!\n";
 	//print_message(test_msg);
 
@@ -301,7 +305,7 @@ int main(void)
 			break;
 		}else if(c == KEY_CTRLS){
 			//print_message("Ctrl + Space\n");
-		}else if(c == KEY_SEND){
+		}else if((c == KEY_SEND) || (c == KEY_ENTER)){
 			if(send_count > 0)
 			{
 				send_buff[send_count++] = '\n';
@@ -328,6 +332,8 @@ int main(void)
 				printf(FG_CLR_CYN);
 				print_message(send_buff);
 				printf(FG_CLR_WHT);
+
+				send_message(serverfd, send_buff, send_count);
 
 				message_current_x = cursor_current_x;
 				message_current_y = cursor_current_y;
