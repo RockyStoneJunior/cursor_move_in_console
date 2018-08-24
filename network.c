@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <sys/socket.h>
+#include <netinet/tcp.h>
 
 int net_init()
 {
@@ -21,6 +22,8 @@ int net_init()
 	servaddr.sin_family = AF_INET;
 
 	int serverfd = socket(AF_INET, SOCK_STREAM, 0);
+	int flags = 1;
+	setsockopt(serverfd, SOL_TCP, TCP_NODELAY, &flags, sizeof(flags));
 	connect(serverfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
 
 	return serverfd;
